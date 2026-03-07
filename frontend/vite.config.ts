@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      outDir: '../dist',   // Output to root /dist — matches server.ts expectation
       emptyOutDir: true,
     },
     server: {

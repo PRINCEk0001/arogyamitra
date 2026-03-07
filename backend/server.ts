@@ -179,8 +179,9 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // In production, Vite builds to /dist at the project root
-    const distPath = path.resolve(__dirname, '../dist');
+    // In production, Vite builds to /frontend/dist relative to the project root
+    // Use process.cwd() so it works correctly on Render (/opt/render/project/src)
+    const distPath = path.join(process.cwd(), 'frontend', 'dist');
     app.use(express.static(distPath));
     app.get('*', (_req, res) =>
       res.sendFile(path.join(distPath, 'index.html'))
