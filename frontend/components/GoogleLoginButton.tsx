@@ -36,7 +36,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onSuccess,
       onClick={handleLogin}
       className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 font-medium py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
     >
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+      <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5 bg-white rounded-full" />
       Continue with Google
     </button>
   );
