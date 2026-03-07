@@ -117,6 +117,7 @@ async function startServer() {
           "https://i.ytimg.com",
           "https://lh3.googleusercontent.com",
           "https://avatars.githubusercontent.com",
+          "https://www.gstatic.com",
         ],
         // Allow YouTube iframes — needed to avoid CSP frame-src blocking
         frameSrc: [
