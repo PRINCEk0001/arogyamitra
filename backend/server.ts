@@ -78,9 +78,12 @@ const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (curl, Postman, SSR, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+
+    // Automatically allow Render domains in case APP_URL is not set
+    if (allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Rejected origin: ${origin}`);
       callback(new Error(`CORS policy: origin ${origin} not allowed`));
     }
   },
