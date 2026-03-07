@@ -10,17 +10,22 @@ export const GithubLoginButton: React.FC<GithubLoginButtonProps> = ({ onSuccess,
   const handleLogin = async () => {
     try {
       const res = await fetch('/api/auth/github/url');
-      const { url } = await res.json();
-      
-      const popup = window.open(url, 'github_login', 'width=500,height=600');
-      
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        onError(data.error || 'GitHub login is not configured on this server');
+        return;
+      }
+
+      window.open(data.url, 'github_login', 'width=500,height=600');
+
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'OAUTH_AUTH_SUCCESS') {
           onSuccess(event.data.token, event.data.user);
           window.removeEventListener('message', handleMessage);
         }
       };
-      
+
       window.addEventListener('message', handleMessage);
     } catch (err) {
       onError('Failed to initiate GitHub login');

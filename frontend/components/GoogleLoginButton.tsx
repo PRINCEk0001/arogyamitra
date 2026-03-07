@@ -9,17 +9,22 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onSuccess,
   const handleLogin = async () => {
     try {
       const res = await fetch('/api/auth/google/url');
-      const { url } = await res.json();
-      
-      const popup = window.open(url, 'google_login', 'width=500,height=600');
-      
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        onError(data.error || 'Google login is not configured on this server');
+        return;
+      }
+
+      window.open(data.url, 'google_login', 'width=500,height=600');
+
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'OAUTH_AUTH_SUCCESS') {
           onSuccess(event.data.token, event.data.user);
           window.removeEventListener('message', handleMessage);
         }
       };
-      
+
       window.addEventListener('message', handleMessage);
     } catch (err) {
       onError('Failed to initiate Google login');

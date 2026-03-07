@@ -37,6 +37,25 @@ export default function App() {
     }
   }, [token]);
 
+  // Handle OAuth fallback: token passed via URL query param (when popup communication fails)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('oauth_token');
+    const oauthUser = params.get('oauth_user');
+    if (oauthToken) {
+      try {
+        const user = oauthUser ? JSON.parse(decodeURIComponent(oauthUser)) : {};
+        handleAuthSuccess(oauthToken, user);
+      } catch (e) {
+        console.error('Failed to parse OAuth user from URL', e);
+        handleAuthSuccess(oauthToken, {});
+      }
+      // Clean the URL without reloading
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
+
   const fetchProfile = async () => {
     try {
       const res = await fetch('/api/users/profile', {

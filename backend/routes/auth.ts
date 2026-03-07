@@ -81,6 +81,7 @@ router.get('/google/callback', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, getJwtSecret(), { expiresIn: '24h' });
 
+    const userPayload = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email }));
     res.send(`
       <html>
         <body>
@@ -90,10 +91,10 @@ router.get('/google/callback', async (req, res) => {
                 type: 'OAUTH_AUTH_SUCCESS', 
                 token: '${token}',
                 user: ${JSON.stringify({ id: user.id, name: user.name, email: user.email })}
-              }, '*');
+              }, window.opener.location.origin);
               window.close();
             } else {
-              window.location.href = '/';
+              window.location.href = '/?oauth_token=${token}&oauth_user=${userPayload}';
             }
           </script>
           <p>Authentication successful. Closing window...</p>
@@ -182,6 +183,7 @@ router.get('/github/callback', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, getJwtSecret(), { expiresIn: '24h' });
 
+    const userPayload = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email }));
     res.send(`
       <html>
         <body>
@@ -191,10 +193,10 @@ router.get('/github/callback', async (req, res) => {
                 type: 'OAUTH_AUTH_SUCCESS', 
                 token: '${token}',
                 user: ${JSON.stringify({ id: user.id, name: user.name, email: user.email })}
-              }, '*');
+              }, window.opener.location.origin);
               window.close();
             } else {
-              window.location.href = '/';
+              window.location.href = '/?oauth_token=${token}&oauth_user=${userPayload}';
             }
           </script>
           <p>Authentication successful. Closing window...</p>
