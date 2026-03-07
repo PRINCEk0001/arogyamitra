@@ -1,0 +1,195 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
+// Routes
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import healthRoutes from './routes/health.js';
+import workoutRoutes from './routes/workout.js';
+import nutritionRoutes from './routes/nutrition.js';
+import coachRoutes from './routes/coach.js';
+import progressRoutes from './routes/progress.js';
+import discoverRoutes from './routes/discover.js';
+import googleRoutes from './routes/google.js';
+
+// Middleware
+import { authenticateToken } from './middleware/auth.js';
+
+// ─── Environment Validation ───────────────────────────────────────────────────
+if (!process.env.JWT_SECRET) {
+  console.error('[FATAL] Missing required environment variable: JWT_SECRET');
+  process.exit(1);
+}
+
+if (!process.env.GROQ_API_KEY && !process.env.GEMINI_API_KEY) {
+  console.error('[FATAL] Missing AI API Key. You must provide either GROQ_API_KEY or GEMINI_API_KEY in .env');
+  process.exit(1);
+}
+
+// ─── Rate Limiters ────────────────────────────────────────────────────────────
+// Strict limiter for auth routes — prevents brute-force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,     // 15 minutes
+  max: 20,                       // 20 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+// General API limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+// AI endpoints rate limiter — Groq API calls are expensive
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,           // 1 minute
+  max: 10,                       // 10 AI requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  message: { error: 'AI request limit reached. Please wait a moment.' }
+});
+
+// ─── CORS Configuration ───────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  ...(process.env.APP_URL ? [process.env.APP_URL] : [])
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, SSR, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+async function startServer() {
+  const app = express();
+  const PORT = Number(process.env.PORT) || 3001;
+
+  // ─── Security Headers (Helmet) ─────────────────────────────────────────────
+  // Step 4: CSP must explicitly allow YouTube frame-src, otherwise Error 153 occurs
+  const helmetConfig = {
+    // ✅ ROOT CAUSE FIX: helmet defaults to "no-referrer" which strips the Referer header.
+    // YouTube embed player requires the Referer header to verify the embedder identity.
+    // Without it, YouTube responds with Error 153 (embedder.identity.missing.referrer).
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' as const },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+        fontSrc: ["'self'", "fonts.gstatic.com"],
+        imgSrc: [
+          "'self'", "data:", "blob:",
+          "https://images.unsplash.com",
+          "https://img.youtube.com",
+          "https://i.ytimg.com",
+          "https://lh3.googleusercontent.com",
+          "https://avatars.githubusercontent.com",
+        ],
+        // Allow YouTube iframes — needed to avoid CSP frame-src blocking
+        frameSrc: [
+          "https://www.youtube.com",
+          "https://www.youtube-nocookie.com",
+        ],
+        connectSrc: ["'self'", "https://www.googleapis.com", "ws://localhost:*", "http://localhost:*"],
+      },
+    },
+  };
+
+  if (process.env.NODE_ENV === 'production') {
+    app.use(helmet(helmetConfig));
+  } else {
+    // In dev, relax CSP so Vite HMR works but still allow YouTube
+    app.use(helmet({ ...helmetConfig, contentSecurityPolicy: helmetConfig.contentSecurityPolicy }));
+  }
+
+  // ─── Core Middleware ───────────────────────────────────────────────────────
+  app.use(cors(corsOptions));
+  app.use(express.json({ limit: '2mb' }));           // Was 50mb — no endpoint needs that
+  app.use(express.urlencoded({ limit: '2mb', extended: true }));
+
+  // Apply general rate limiter to all API routes
+  // app.use('/api', apiLimiter);
+
+  // ─── Request Logger ────────────────────────────────────────────────────────
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+  });
+
+  // ─── API Routes ────────────────────────────────────────────────────────────
+  app.use('/api/auth', authLimiter, authRoutes);
+  app.use('/api/users', authenticateToken, userRoutes);
+  app.use('/api/health', authenticateToken, healthRoutes);
+  app.use('/api/workout', authenticateToken, workoutRoutes);
+  app.use('/api/nutrition', authenticateToken, nutritionRoutes);
+  app.use('/api/coach', authenticateToken, coachRoutes);
+  app.use('/api/progress', authenticateToken, progressRoutes);
+  app.use('/api/discover', authenticateToken, discoverRoutes);
+  app.use('/api/google', googleRoutes);
+
+  // ─── Health Check ─────────────────────────────────────────────────────────
+  app.get('/api/health-check', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // ─── Frontend ─────────────────────────────────────────────────────────────
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      root: path.resolve(__dirname, '../frontend'),
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    // In production, Vite builds to /dist at the project root
+    const distPath = path.resolve(__dirname, '../dist');
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) =>
+      res.sendFile(path.join(distPath, 'index.html'))
+    );
+  }
+
+  // ─── Global Error Handler ──────────────────────────────────────────────────
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('[ERROR]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`ArogyaMitra running on http://localhost:${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
