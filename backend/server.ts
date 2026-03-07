@@ -95,6 +95,7 @@ async function startServer() {
 
   // ─── Security Headers (Helmet) ─────────────────────────────────────────────
   // Step 4: CSP must explicitly allow YouTube frame-src, otherwise Error 153 occurs
+  const appUrl = process.env.APP_URL || '';
   const helmetConfig = {
     // ✅ ROOT CAUSE FIX: helmet defaults to "no-referrer" which strips the Referer header.
     // YouTube embed player requires the Referer header to verify the embedder identity.
@@ -119,7 +120,15 @@ async function startServer() {
           "https://www.youtube.com",
           "https://www.youtube-nocookie.com",
         ],
-        connectSrc: ["'self'", "https://www.googleapis.com", "ws://localhost:*", "http://localhost:*"],
+        connectSrc: [
+          "'self'",
+          "https://www.googleapis.com",
+          // Allow Render production URL (same-origin API calls need this when served cross-context)
+          ...(appUrl ? [appUrl] : []),
+          // Allow localhost for dev
+          "ws://localhost:*",
+          "http://localhost:*",
+        ],
       },
     },
   };
