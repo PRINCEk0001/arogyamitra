@@ -5,7 +5,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.resolve(__dirname, '../../arogyamitra.db');
+// Use DATABASE_URL env var if set, otherwise resolve db at project root
+// On Render, process.cwd() is the project root (/opt/render/project/src)
+const dbFileName = process.env.DATABASE_URL || 'arogyamitra.db';
+const dbPath = path.isAbsolute(dbFileName)
+  ? dbFileName
+  : path.resolve(process.cwd(), dbFileName);
+
+console.log(`[DB] Using database at: ${dbPath}`);
 const db = new Database(dbPath);
 
 // Initialize tables
