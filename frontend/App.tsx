@@ -13,13 +13,21 @@ import { Explore } from './pages/Explore';
 import { Home, BarChart2, MessageSquare, Utensils, Activity } from 'lucide-react';
 
 // Protected Route Component via Clerk
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, token }: { children: React.ReactNode, token: string | null }) => {
   const { isLoaded, isSignedIn } = useAuth();
 
-  if (!isLoaded) return null; // Alternatively, a full page spinner here
+  if (!isLoaded || (isSignedIn && !token)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background-dark">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   if (!isSignedIn) {
     return <Navigate to="/login" replace />;
   }
+
   return <>{children}</>;
 };
 
@@ -55,12 +63,13 @@ export default function App() {
 
   // Fetch user profile only after token is safely fetched from Clerk
   useEffect(() => {
-    if (token) {
+    if (token && isSignedIn) {
       fetchProfile();
     }
-  }, [token]);
+  }, [token, isSignedIn]);
 
   const fetchProfile = async () => {
+    if (!token) return;
     try {
       const res = await fetch('/api/users/profile', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -72,7 +81,9 @@ export default function App() {
           fetchAllData(data);
         }
       } else if (res.status === 401 || res.status === 403) {
-        handleLogout();
+        // DO NOT log out instantly. The token might just be stale.
+        // Let Clerk handle session invalidation.
+        console.warn("Backend rejected token on profile fetch");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -244,7 +255,7 @@ export default function App() {
             } />
 
             <Route path="/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 {!profile || isEditingProfile ? (
                   <div className="px-4 py-12">
                     <div className="flex items-center justify-between mb-8">
@@ -274,14 +285,14 @@ export default function App() {
                     onEditProfile={() => setIsEditingProfile(true)}
                     loading={loading}
                     activeTab="dashboard"
-                    token={token!} // Wait to pass until token is not null, but components will handle it
+                    token={token!}
                   />
                 )}
               </ProtectedRoute>
             } />
 
             <Route path="/workout" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 <Dashboard
                   profile={profile!}
                   healthStats={healthStats}
@@ -298,7 +309,7 @@ export default function App() {
             } />
 
             <Route path="/nutrition" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 <Dashboard
                   profile={profile!}
                   healthStats={healthStats}
@@ -315,7 +326,7 @@ export default function App() {
             } />
 
             <Route path="/coach" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 <div className="pt-6">
                   <h2 className="text-2xl font-bold px-4 mb-4">AI Health Coach</h2>
                   <AICoach profile={profile!} stats={healthStats} token={token!} />
@@ -324,7 +335,7 @@ export default function App() {
             } />
 
             <Route path="/progress" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 <div className="pt-6">
                   <h2 className="text-2xl font-bold px-4 mb-4">Your Progress</h2>
                   <Progress profile={profile!} token={token!} />
@@ -333,7 +344,7 @@ export default function App() {
             } />
 
             <Route path="/explore" element={
-              <ProtectedRoute>
+              <ProtectedRoute token={token}>
                 <Explore token={token!} />
               </ProtectedRoute>
             } />
