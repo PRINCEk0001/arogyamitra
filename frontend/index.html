@@ -8,12 +8,13 @@
   <!-- Step 4: CSP meta tag — must allow YouTube iframes to prevent Error 153 -->
   <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: blob: https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://www.gstatic.com https://developers.google.com;
+        img-src 'self' data: blob: https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://www.gstatic.com https://developers.google.com https://img.clerk.com;
         frame-src https://www.youtube.com https://www.youtube-nocookie.com;
-        connect-src 'self' https://www.googleapis.com;
+        connect-src 'self' https://www.googleapis.com https://*.clerk.accounts.dev https://clerk.com wss://ws-us2.pusher.com;
+        worker-src 'self' blob:;
       " />
 </head>
 

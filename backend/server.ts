@@ -105,45 +105,14 @@ async function startServer() {
     // YouTube embed player requires the Referer header to verify the embedder identity.
     // Without it, YouTube responds with Error 153 (embedder.identity.missing.referrer).
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' as const },
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-        fontSrc: ["'self'", "fonts.gstatic.com"],
-        imgSrc: [
-          "'self'", "data:", "blob:",
-          "https://images.unsplash.com",
-          "https://img.youtube.com",
-          "https://i.ytimg.com",
-          "https://lh3.googleusercontent.com",
-          "https://avatars.githubusercontent.com",
-          "https://www.gstatic.com",
-          "https://developers.google.com",
-        ],
-        // Allow YouTube iframes — needed to avoid CSP frame-src blocking
-        frameSrc: [
-          "https://www.youtube.com",
-          "https://www.youtube-nocookie.com",
-        ],
-        connectSrc: [
-          "'self'",
-          "https://www.googleapis.com",
-          // Allow Render production URL (same-origin API calls need this when served cross-context)
-          ...(appUrl ? [appUrl] : []),
-          // Allow localhost for dev
-          "ws://localhost:*",
-          "http://localhost:*",
-        ],
-      },
-    },
+    contentSecurityPolicy: false,
   };
 
   if (process.env.NODE_ENV === 'production') {
     app.use(helmet(helmetConfig));
   } else {
     // In dev, relax CSP so Vite HMR works but still allow YouTube
-    app.use(helmet({ ...helmetConfig, contentSecurityPolicy: helmetConfig.contentSecurityPolicy }));
+    app.use(helmet({ ...helmetConfig, contentSecurityPolicy: false }));
   }
 
   // ─── Core Middleware ───────────────────────────────────────────────────────
@@ -175,6 +144,17 @@ async function startServer() {
   // ─── Health Check ─────────────────────────────────────────────────────────
   app.get('/api/health-check', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // ─── Frontend Global CSP For Vite ─────────────────────────────────────────
+  // Vite in middlewareMode pushes incredibly strict CSP defaults which breaks Clerk.
+  // We use a global override here so the Dev Server respects our domains.
+  app.use((_req, res, next) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.com; connect-src 'self' https://www.googleapis.com ws://localhost:* http://localhost:* https://*.clerk.accounts.dev https://clerk.com wss://ws-us2.pusher.com; worker-src 'self' blob:; img-src 'self' data: blob: https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://www.gstatic.com https://developers.google.com https://img.clerk.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com;"
+    );
+    next();
   });
 
   // ─── Frontend ─────────────────────────────────────────────────────────────
