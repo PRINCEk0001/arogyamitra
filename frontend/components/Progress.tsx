@@ -14,8 +14,9 @@ import { Line } from 'react-chartjs-2';
 import { UserProfile, ProgressEntry } from '../types';
 import { TrendingDown, Scale, Calendar, Plus, Activity, X, Smile, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import bmrDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_bmr_icon_1772964574066.png'; // Generated styling asset
-import moodDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_mood_icon_1772964644252.png'; // Generated styling asset
+
+const bmrDropIcon = '/nano_bmr.png';
+const moodDropIcon = '/nano_mood.png';
 
 ChartJS.register(
   CategoryScale,
@@ -251,8 +252,8 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
                 key={emoji}
                 onClick={() => setSelectedMood(emoji)}
                 className={`w-12 h-12 rounded-full text-2xl flex items-center justify-center transition-all ${selectedMood === emoji
-                    ? 'bg-yellow-500/20 scale-110 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.3)]'
-                    : 'hover:bg-white/5 hover:scale-105 opacity-60 hover:opacity-100'
+                  ? 'bg-yellow-500/20 scale-110 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.3)]'
+                  : 'hover:bg-white/5 hover:scale-105 opacity-60 hover:opacity-100'
                   }`}
               >
                 {emoji}

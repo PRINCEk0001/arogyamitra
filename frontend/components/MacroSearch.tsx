@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import searchDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_search_icon_1772964451792.png';
+
+const searchDropIcon = '/nano_search.png';
 
 interface MacroResult {
     food: string;

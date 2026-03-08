@@ -7,8 +7,9 @@ import { GoogleCalendarButton } from './GoogleCalendarButton';
 import { WorkoutTimer } from './WorkoutTimer';
 import { DigitalClock } from './DigitalClock';
 import { MacroSearch } from './MacroSearch';
-import waterDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_water_tracker_icon_1772964194906.png'; // Using absolute path reference for generated asset
-import calendarDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_calendar_icon_1772964307855.png'; // Using absolute path reference for generated asset
+
+const waterDropIcon = '/nano_water.png';
+const calendarDropIcon = '/nano_calendar.png';
 
 interface DashboardProps {
   profile: UserProfile;
