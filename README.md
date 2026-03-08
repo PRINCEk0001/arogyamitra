@@ -1,217 +1,164 @@
-# 🌿 ArogyaMitra — AI Health Coaching Platform
+# ArogyaMitra
 
-> A full-stack AI-powered personal health assistant that generates personalized workout plans, nutrition advice, and real-time coaching. Built with React, Node.js, Groq LLaMA 3, and SQLite.
+Your personal health companion — built to help you eat better, train smarter, and stay consistent.
 
----
-
-## ✨ Features
-
-| Feature | Description |
-|---|---|
-| 🤖 **AI Coach Chat** | Real-time coaching powered by Groq LLaMA 3 |
-| 🏋️ **Workout Generator** | Personalized AI workout plans with YouTube tutorials |
-| 🥗 **Nutrition Planner** | Macro-optimized meal plans via AI |
-| 📊 **Health Dashboard** | BMI, BMR, TDEE tracking with visualizations |
-| 📈 **Progress Tracking** | Historical weight and workout records |
-| 🔐 **Auth** | Email/password + Google OAuth + GitHub OAuth |
-| 📅 **Google Calendar** | Schedule workouts directly to your calendar |
-| 🎥 **YouTube Integration** | Auto-fetched exercise tutorial videos |
+ArogyaMitra brings together workout planning, nutrition tracking, and real-time coaching into one clean interface. It uses large language models under the hood so the advice adapts to your goals, body metrics, and preferences — not generic templates.
 
 ---
 
-## 🏗 Architecture
+## What It Does
 
-```
-Frontend (React + Vite)  →  Backend API (Node.js + Express)  →  Groq LLaMA API
-       ↕                             ↕                               
-  React Router              SQLite (better-sqlite3)
-  TailwindCSS               JWT Authentication
-  Lucide Icons              Google + GitHub OAuth
-```
-
-**Core Principle:** The frontend never calls AI APIs directly. All AI and external API calls go through the backend, keeping API keys secure.
+- **Coach Chat** — Talk to an AI coach that understands your fitness context and gives actionable advice.
+- **Workout Plans** — Get personalized routines with embedded YouTube tutorial videos for every exercise.
+- **Nutrition Plans** — Receive macro-balanced meal plans tailored to your calorie targets.
+- **Health Dashboard** — See your BMI, BMR, and TDEE at a glance with clean visualizations.
+- **Progress Tracking** — Log your weight and workouts over time to track trends.
+- **Authentication** — Sign up with email, Google, or GitHub. Sessions are handled with JWTs.
+- **Calendar Sync** — Push workout sessions directly to Google Calendar.
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-### Frontend
-- **React 19** + **TypeScript** + **Vite**
-- **TailwindCSS** for styling
-- **React Router v7** for navigation
-- **Recharts** + **Chart.js** for data visualization
-- **Framer Motion** for animations
+**Frontend:** React 19, TypeScript, Vite, TailwindCSS, Recharts, Chart.js, Framer Motion
 
-### Backend
-- **Node.js** + **Express** + **TypeScript**
-- **better-sqlite3** for database
-- **bcryptjs** for password hashing
-- **jsonwebtoken** for JWT auth
-- **googleapis** for Google Calendar & OAuth
+**Backend:** Node.js, Express, TypeScript, better-sqlite3, JWT auth, bcrypt
 
-### AI & External
-- **Groq LLaMA 3.3 70B** for AI features
-- **YouTube Data API v3** for exercise videos
-- **Google OAuth 2.0**
-- **GitHub OAuth**
+**External Services:** Groq (LLaMA 3.3 70B), Gemini, YouTube Data API, Google OAuth, GitHub OAuth, Clerk
 
 ---
 
-## 📁 Project Structure
+## Project Layout
 
 ```
 arogyamitra/
 ├── backend/
-│   ├── database/       # SQLite schema and connection
-│   ├── middleware/     # JWT auth middleware
-│   ├── routes/         # API route handlers
-│   └── services/       # AI, YouTube integrations
+│   ├── database/        # SQLite schema and connection
+│   ├── middleware/       # Auth middleware
+│   ├── routes/           # Express route handlers
+│   ├── services/         # AI integrations, YouTube, email
+│   └── server.ts         # App entry point
 ├── frontend/
-│   ├── components/     # Reusable UI components
-│   ├── pages/          # Route-level page components
-│   ├── services/       # Frontend API service layer
-│   └── types.ts        # TypeScript type definitions
-├── .env.example        # Environment variable template
-├── package.json        # Root package configuration
+│   ├── components/       # UI components
+│   ├── pages/            # Route-level views
+│   ├── services/         # API client layer
+│   ├── App.tsx           # Root component with routing
+│   └── main.tsx          # Vite entry
+├── .env.example          # Environment variable template
+├── render.yaml           # Render deployment config
+├── package.json
 └── README.md
 ```
 
 ---
 
-## ⚡ Quick Start
+## Getting Started
 
-### Prerequisites
-- Node.js **v20+**
-- npm **v9+**
+### Requirements
 
-### 1. Clone the Repository
+- Node.js v20 or later
+- npm v9 or later
+
+### Setup
+
 ```bash
-git clone https://github.com/your-username/arogyamitra.git
+git clone https://github.com/PRINCEk0001/arogyamitra.git
 cd arogyamitra
-```
-
-### 2. Install Dependencies
-```bash
 npm install
-```
-
-### 3. Configure Environment Variables
-```bash
 cp .env.example .env
 ```
 
-Then edit `.env` and fill in your keys:
+Open `.env` and fill in your API keys (see the section below for where to get them).
 
-```env
-GROQ_API_KEY=your_groq_api_key
-YOUTUBE_API_KEY=your_youtube_api_key
-JWT_SECRET=your_strong_random_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-```
+### Run Locally
 
-### 4. Run Locally
 ```bash
 npm run dev
 ```
 
-This starts both the backend and frontend on **http://localhost:3001**
+The app starts at **http://localhost:3000**.
 
 ---
 
-## 🔑 Getting API Keys
+## API Keys You'll Need
 
-### Groq API Key
-1. Visit [console.groq.com](https://console.groq.com)
-2. Create an account → API Keys → Create New Key
+| Service | Where to Get It |
+|---------|-----------------|
+| **Groq** | [console.groq.com](https://console.groq.com) → API Keys → Create New Key |
+| **Gemini** | [Google AI Studio](https://aistudio.google.com/apikey) → Create API Key |
+| **YouTube Data API** | [Google Cloud Console](https://console.cloud.google.com) → Enable YouTube Data API v3 → Credentials → API Key |
+| **Google OAuth** | Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID |
+| **GitHub OAuth** | GitHub → Settings → Developer Settings → OAuth Apps → New OAuth App |
+| **Clerk** | [clerk.com](https://clerk.com) → Create Application → Copy keys |
 
-### YouTube Data API
-1. Visit [Google Cloud Console](https://console.cloud.google.com)
-2. Enable **YouTube Data API v3** → Create credentials → API Key
-
-### Google OAuth
-1. Google Cloud Console → APIs & Services → Credentials
-2. Create **OAuth 2.0 Client ID** (Web application)
-3. Set Authorized redirect URI: `http://localhost:3001/api/auth/google/callback`
-
-### GitHub OAuth
-1. GitHub Settings → Developer settings → OAuth Apps → New OAuth App
-2. Set callback URL: `http://localhost:3001/api/auth/github/callback`
+For Google OAuth, set the redirect URI to `http://localhost:3000/api/auth/google/callback`.
+For GitHub OAuth, set the callback URL to `http://localhost:3000/api/auth/github/callback`.
 
 ---
 
-## 🌐 API Reference
+## API Endpoints
 
 ### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login and get JWT |
-| POST | `/api/auth/logout` | Logout (client clears token) |
-| GET | `/api/auth/google/url` | Get Google OAuth URL |
-| GET | `/api/auth/github/url` | Get GitHub OAuth URL |
+
+| Method | Route | What It Does |
+|--------|-------|--------------|
+| POST | `/api/auth/register` | Create a new account |
+| POST | `/api/auth/login` | Log in, receive a JWT |
+| GET | `/api/auth/google/url` | Start Google OAuth flow |
+| GET | `/api/auth/github/url` | Start GitHub OAuth flow |
 
 ### User
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/profile` | Get current user profile |
-| POST | `/api/users/profile` | Update user profile |
 
-### AI Features *(Requires JWT)*
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/workout/plan` | Generate AI workout plan |
-| POST | `/api/nutrition/plan` | Generate AI nutrition plan |
-| POST | `/api/coach/chat` | Chat with AI health coach |
+| Method | Route | What It Does |
+|--------|-------|--------------|
+| GET | `/api/users/profile` | Fetch your profile |
+| POST | `/api/users/profile` | Update your profile |
 
-### Calendar *(Requires JWT)*
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/google/calendar/schedule` | Create workout event |
+### AI Features (auth required)
 
----
+| Method | Route | What It Does |
+|--------|-------|--------------|
+| POST | `/api/workout/plan` | Generate a workout plan |
+| POST | `/api/nutrition/plan` | Generate a meal plan |
+| POST | `/api/coach/chat` | Chat with the AI coach |
 
-## 🚀 Deployment
+### Calendar (auth required)
 
-### Option 1: Render (Recommended)
-
-1. Push code to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your GitHub repository
-4. Set Build Command: `npm install`
-5. Set Start Command: `npm run start`
-6. Add all environment variables from `.env.example` in the Render dashboard
-7. Deploy!
-
-### Option 2: Railway
-
-1. Go to [railway.app](https://railway.app)
-2. New Project → Deploy from GitHub repo
-3. Add environment variables in the Railway dashboard
-4. Railway auto-detects the start command
-
-> **Note for all platforms:** The app uses SQLite, which requires persistent disk storage. On Render, use a **Persistent Disk** add-on. For production at scale, consider migrating to PostgreSQL.
+| Method | Route | What It Does |
+|--------|-------|--------------|
+| POST | `/api/google/calendar/schedule` | Add a workout to Google Calendar |
 
 ---
 
-## 🔒 Security Notes
+## Deploying to Render
 
-- Never commit your `.env` file (it's gitignored)
-- Use a strong random `JWT_SECRET` (min 32 characters): `openssl rand -hex 32`
-- All AI API calls happen server-side — API keys are never exposed to the browser
-- Passwords are hashed with bcrypt (10 salt rounds)
-- `password_hash` is never returned in API responses
+1. Push your code to GitHub.
+2. Go to [render.com](https://render.com) → New Web Service → connect this repo.
+3. Build Command: `npm install && npm run build`
+4. Start Command: `npm start`
+5. Add your environment variables in the Render dashboard (refer to `.env.example`).
+6. Deploy.
+
+A `render.yaml` is included to speed up the configuration.
+
+> **Note:** This app uses SQLite. On Render, attach a Persistent Disk so the database survives redeployments. For heavier production workloads, consider switching to PostgreSQL.
 
 ---
 
-## 📄 License
+## Security
 
-MIT License — See [LICENSE](LICENSE) for details.
+- The `.env` file is gitignored and never committed.
+- All AI and third-party API calls run server-side — no keys reach the browser.
+- Passwords are hashed with bcrypt (10 rounds).
+- `password_hash` is stripped from every API response.
+- Use a strong `JWT_SECRET` (at least 32 characters). Generate one with: `openssl rand -hex 32`
 
 ---
 
-## 👨‍💻 Developer
+## License
 
-**Developed & Crafted by PRINCE KORI**
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+Built by **Prince Kori**

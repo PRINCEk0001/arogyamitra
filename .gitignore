@@ -1,13 +1,34 @@
+# Dependencies
 node_modules/
+
+# Build output
 build/
 dist/
-coverage/
-.DS_Store
-*.log
-.env*
+frontend/dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
 !.env.example
+
+# Database
 *.db
 *.sqlite
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript cache
 tsconfig.tsbuildinfo
+
+# Test files
+coverage/
+
+# Dev scratch files
 backend/loadEnv.ts
 backend/test-jwt.ts
