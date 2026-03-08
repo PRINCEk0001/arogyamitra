@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { requireAuth, clerkClient } from '@clerk/express';
+import { requireAuth, clerkClient, getAuth } from '@clerk/express';
 import db from '../database/database.js';
 
 export interface AuthRequest extends Request {
@@ -7,7 +7,6 @@ export interface AuthRequest extends Request {
     userId: number; // Important: Must remain a number for SQLite queries untouched
     email: string;
   };
-  auth?: any;
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -15,16 +14,16 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
   requireAuth()(req, res, async (err: any) => {
     if (err) {
-      console.log("-> 401: Clerk Auth Failed");
+      console.log("-> 401: Clerk Auth Failed", err);
       return res.status(401).json({ error: 'Access denied. Invalid or missing token.' });
     }
 
-    if (!req.auth || !req.auth.userId) {
-      console.log("-> 401: No userId found in Clerk auth object");
+    const { userId: clerkId } = getAuth(req);
+
+    if (!clerkId) {
+      console.log("-> 401: No userId found via getAuth(req)");
       return res.status(401).json({ error: 'Access denied. Unauthenticated request.' });
     }
-
-    const clerkId = req.auth.userId;
 
     try {
       // 1. Check if user already exists in our DB via clerk_id

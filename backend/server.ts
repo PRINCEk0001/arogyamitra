@@ -22,6 +22,8 @@ import discoverRoutes from './routes/discover.js';
 // import googleRoutes from './routes/google.js'; // Removed for Clerk
 import calendarRoutes from './routes/calendar.js';
 
+import { clerkMiddleware } from '@clerk/express';
+
 // Middleware
 import { authenticateToken } from './middleware/auth.js';
 
@@ -116,6 +118,7 @@ async function startServer() {
   }
 
   // ─── Core Middleware ───────────────────────────────────────────────────────
+  app.use(clerkMiddleware());
   app.use(cors(corsOptions));
   app.use(express.json({ limit: '2mb' }));           // Was 50mb — no endpoint needs that
   app.use(express.urlencoded({ limit: '2mb', extended: true }));

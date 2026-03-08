@@ -105,7 +105,13 @@ try {
   db.exec('ALTER TABLE users ADD COLUMN github_id TEXT UNIQUE');
 } catch (e) { }
 try {
-  db.exec('ALTER TABLE users ADD COLUMN clerk_id TEXT UNIQUE');
-} catch (e) { }
+  db.exec('ALTER TABLE users ADD COLUMN clerk_id TEXT');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id)');
+} catch (e) {
+  // If column already exists but index might not, try adding index anyway
+  try {
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id)');
+  } catch (idxErr) { }
+}
 
 export default db;
