@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth, UserButton } from '@clerk/clerk-react';
 import { UserProfile, MealPlan, Workout, HealthStats, DiscoverData } from './types';
 import { generateThematicImage, generateNutritionPlanAI } from './services/aiService';
 import { Dashboard } from './components/Dashboard';
@@ -9,19 +10,23 @@ import { Progress } from './components/Progress';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Explore } from './pages/Explore';
-import { Home, BarChart2, MessageSquare, Utensils, Activity, LogOut } from 'lucide-react';
+import { Home, BarChart2, MessageSquare, Utensils, Activity } from 'lucide-react';
 
-// Protected Route Component
-const ProtectedRoute = ({ children, token }: { children: React.ReactNode, token: string | null }) => {
-  if (!token) {
+// Protected Route Component via Clerk
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) return null; // Alternatively, a full page spinner here
+  if (!isSignedIn) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [user, setUser] = useState<any>(null);
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [healthStats, setHealthStats] = useState<HealthStats | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -30,31 +35,30 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  // Fetch user profile on mount if token exists
+  // Sync Clerk token to local state so standard fetch hooks work seamlessly
+  useEffect(() => {
+    const initAuth = async () => {
+      if (isLoaded && isSignedIn) {
+        try {
+          const t = await getToken();
+          setToken(t);
+        } catch (e) {
+          console.error("Failed to get Clerk token", e);
+        }
+      } else if (isLoaded && !isSignedIn) {
+        setToken(null);
+        setProfile(null);
+      }
+    };
+    initAuth();
+  }, [isLoaded, isSignedIn, getToken]);
+
+  // Fetch user profile only after token is safely fetched from Clerk
   useEffect(() => {
     if (token) {
       fetchProfile();
     }
   }, [token]);
-
-  // Handle OAuth fallback: token passed via URL query param (when popup communication fails)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const oauthToken = params.get('oauth_token');
-    const oauthUser = params.get('oauth_user');
-    if (oauthToken) {
-      try {
-        const user = oauthUser ? JSON.parse(decodeURIComponent(oauthUser)) : {};
-        handleAuthSuccess(oauthToken, user);
-      } catch (e) {
-        console.error('Failed to parse OAuth user from URL', e);
-        handleAuthSuccess(oauthToken, {});
-      }
-      // Clean the URL without reloading
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-  }, []);
 
   const fetchProfile = async () => {
     try {
@@ -84,7 +88,6 @@ export default function App() {
       'Authorization': `Bearer ${token}`
     };
 
-    // 1. Get basic health stats first as they are needed for others
     let healthData: HealthStats | null = null;
     try {
       const healthRes = await fetch('/api/health/calc', { method: 'POST', headers, body: JSON.stringify({ profile: userProfile }) });
@@ -94,16 +97,14 @@ export default function App() {
           healthData = JSON.parse(text);
           setHealthStats(healthData);
         } catch (parseError) {
-          console.error("JSON Parse Error in Health Stats:", parseError, "Response Text Length:", text.length);
+          console.error("JSON Parse Error in Health Stats:", parseError);
         }
       }
     } catch (e) {
       console.error("Error fetching health stats:", e);
     }
 
-    // Run other fetches in parallel and handle them independently
     await Promise.all([
-      // Nutrition Plan
       (async () => {
         try {
           const tdee = healthData?.tdee || 2000;
@@ -125,7 +126,6 @@ export default function App() {
         }
       })(),
 
-      // Workout Plan
       (async () => {
         try {
           const workoutRes = await fetch('/api/workout/plan', { method: 'POST', headers, body: JSON.stringify({ profile: userProfile }) });
@@ -136,7 +136,7 @@ export default function App() {
               const workoutImageUrl = await generateThematicImage(`${workoutData.title} fitness workout in a modern gym`);
               setWorkout({ ...workoutData, imageUrl: workoutImageUrl || workoutData.imageUrl });
             } catch (parseError) {
-              console.error("JSON Parse Error in Workout Plan:", parseError, "Response Text Length:", text.length);
+              console.error("JSON Parse Error in Workout Plan:", parseError);
             }
           }
         } catch (e) {
@@ -144,7 +144,6 @@ export default function App() {
         }
       })(),
 
-      // Discover Data
       (async () => {
         try {
           const discoverRes = await fetch('/api/discover/discover', { headers });
@@ -157,7 +156,7 @@ export default function App() {
               }
               setDiscoverData(discoverData);
             } catch (parseError) {
-              console.error("JSON Parse Error in Discover Data:", parseError, "Response Text Length:", text.length);
+              console.error("JSON Parse Error in Discover Data:", parseError);
             }
           }
         } catch (e) {
@@ -169,24 +168,13 @@ export default function App() {
     setLoading(false);
   };
 
-  const handleAuthSuccess = (newToken: string, newUser: any) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-  };
-
   const handleLogout = async () => {
     try {
-      if (token) {
-        await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      }
+      await signOut(); // This fully signs out of Clerk everywhere
+      setToken(null);
+      setProfile(null);
     } catch (e) {
       console.error("Logout error", e);
-    } finally {
-      setToken(null);
-      setUser(null);
-      setProfile(null);
-      localStorage.removeItem('token');
     }
   };
 
@@ -223,6 +211,15 @@ export default function App() {
     }
   };
 
+  // Ensure Clerk handles full app loading states gracefully
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background-dark">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <div className="min-h-screen max-w-[430px] mx-auto bg-background-dark relative overflow-x-hidden no-scrollbar">
@@ -240,14 +237,14 @@ export default function App() {
           )}
           <Routes>
             <Route path="/login" element={
-              token ? <Navigate to="/dashboard" replace /> : <Login onAuthSuccess={handleAuthSuccess} />
+              isSignedIn ? <Navigate to="/dashboard" replace /> : <Login />
             } />
             <Route path="/register" element={
-              token ? <Navigate to="/dashboard" replace /> : <Register onAuthSuccess={handleAuthSuccess} />
+              isSignedIn ? <Navigate to="/dashboard" replace /> : <Register />
             } />
 
             <Route path="/dashboard" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 {!profile || isEditingProfile ? (
                   <div className="px-4 py-12">
                     <div className="flex items-center justify-between mb-8">
@@ -255,15 +252,13 @@ export default function App() {
                         <h1 className="text-3xl font-bold text-primary">{isEditingProfile ? 'Update Profile' : 'Welcome'}</h1>
                         <p className="text-slate-400">{isEditingProfile ? 'Refine your health details' : "Let's set up your profile"}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-4 items-center">
                         {isEditingProfile && (
-                          <button onClick={() => setIsEditingProfile(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                          <button onClick={() => setIsEditingProfile(false)} className="px-3 py-1.5 text-xs text-slate-300 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-colors">
                             Cancel
                           </button>
                         )}
-                        <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-400 transition-colors">
-                          <LogOut className="w-5 h-5" />
-                        </button>
+                        <UserButton appearance={{ elements: { userButtonAvatarBox: "w-10 h-10 border-2 border-primary/50" } }} />
                       </div>
                     </div>
                     <ProfileForm profile={profile} onSubmit={handleProfileSubmit} />
@@ -279,14 +274,14 @@ export default function App() {
                     onEditProfile={() => setIsEditingProfile(true)}
                     loading={loading}
                     activeTab="dashboard"
-                    token={token!}
+                    token={token!} // Wait to pass until token is not null, but components will handle it
                   />
                 )}
               </ProtectedRoute>
             } />
 
             <Route path="/workout" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 <Dashboard
                   profile={profile!}
                   healthStats={healthStats}
@@ -303,7 +298,7 @@ export default function App() {
             } />
 
             <Route path="/nutrition" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 <Dashboard
                   profile={profile!}
                   healthStats={healthStats}
@@ -320,7 +315,7 @@ export default function App() {
             } />
 
             <Route path="/coach" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 <div className="pt-6">
                   <h2 className="text-2xl font-bold px-4 mb-4">AI Health Coach</h2>
                   <AICoach profile={profile!} stats={healthStats} token={token!} />
@@ -329,7 +324,7 @@ export default function App() {
             } />
 
             <Route path="/progress" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 <div className="pt-6">
                   <h2 className="text-2xl font-bold px-4 mb-4">Your Progress</h2>
                   <Progress profile={profile!} token={token!} />
@@ -338,7 +333,7 @@ export default function App() {
             } />
 
             <Route path="/explore" element={
-              <ProtectedRoute token={token}>
+              <ProtectedRoute>
                 <Explore token={token!} />
               </ProtectedRoute>
             } />
@@ -347,19 +342,19 @@ export default function App() {
           </Routes>
         </main>
 
-        <Navigation profile={profile} token={token} onLogout={handleLogout} />
+        <Navigation profile={profile} isSignedIn={isSignedIn} />
       </div>
     </BrowserRouter>
   );
 }
 
-const Navigation = ({ profile, token, onLogout }: any) => {
+const Navigation = ({ profile, isSignedIn }: { profile: any; isSignedIn: boolean | undefined }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const activeTab = location.pathname.substring(1) || 'dashboard';
 
-  if (!token || !profile || location.pathname === '/login' || location.pathname === '/register') return null;
+  if (!isSignedIn || !profile || location.pathname === '/login' || location.pathname === '/register') return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50 px-6 pb-8 pt-4 bg-gradient-to-t from-background-dark via-background-dark/95 to-transparent">

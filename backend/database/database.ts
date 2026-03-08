@@ -104,5 +104,8 @@ try {
 try {
   db.exec('ALTER TABLE users ADD COLUMN github_id TEXT UNIQUE');
 } catch (e) { }
+try {
+  db.exec('ALTER TABLE users ADD COLUMN clerk_id TEXT UNIQUE');
+} catch (e) { }
 
 export default db;

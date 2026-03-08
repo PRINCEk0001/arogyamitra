@@ -11,7 +11,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 // Routes
-import authRoutes from './routes/auth.js';
+// import authRoutes from './routes/auth.js'; // Removed for Clerk
 import userRoutes from './routes/users.js';
 import healthRoutes from './routes/health.js';
 import workoutRoutes from './routes/workout.js';
@@ -19,7 +19,8 @@ import nutritionRoutes from './routes/nutrition.js';
 import coachRoutes from './routes/coach.js';
 import progressRoutes from './routes/progress.js';
 import discoverRoutes from './routes/discover.js';
-import googleRoutes from './routes/google.js';
+// import googleRoutes from './routes/google.js'; // Removed for Clerk
+import calendarRoutes from './routes/calendar.js';
 
 // Middleware
 import { authenticateToken } from './middleware/auth.js';
@@ -160,7 +161,6 @@ async function startServer() {
   });
 
   // ─── API Routes ────────────────────────────────────────────────────────────
-  app.use('/api/auth', authLimiter, authRoutes);
   app.use('/api/users', authenticateToken, userRoutes);
   app.use('/api/health', authenticateToken, healthRoutes);
   app.use('/api/workout', authenticateToken, workoutRoutes);
@@ -168,7 +168,9 @@ async function startServer() {
   app.use('/api/coach', authenticateToken, coachRoutes);
   app.use('/api/progress', authenticateToken, progressRoutes);
   app.use('/api/discover', authenticateToken, discoverRoutes);
-  app.use('/api/google', googleRoutes);
+  // app.use('/api/auth', authLimiter, authRoutes); // Removed: Migrated to Clerk
+  // app.use('/api/google', googleRoutes); // Removed: Migrated to Clerk
+  app.use('/api/calendar', calendarRoutes);
 
   // ─── Health Check ─────────────────────────────────────────────────────────
   app.get('/api/health-check', (_req, res) => {

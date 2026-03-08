@@ -1,88 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Bell, ExternalLink, RefreshCw, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  htmlLink: string;
-}
+import React from 'react';
+import { Calendar, Clock, ArrowRight } from 'lucide-react';
 
 const CalendarReminders: React.FC = () => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [clockError, setClockError] = React.useState(false);
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/calendar/events', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setEvents(data);
-        setIsConnected(true);
-      } else if (response.status === 401) {
-        setIsConnected(false);
-      } else {
-        setError('Failed to fetch events');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Network error');
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenCalendar = () => {
+    window.open('https://calendar.google.com', '_blank');
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const handleConnect = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/calendar/auth/url', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const { url } = await response.json();
-
-      const authWindow = window.open(url, 'google_calendar_auth', 'width=600,height=700');
-      
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'CALENDAR_AUTH_SUCCESS') {
-          fetchEvents();
-          window.removeEventListener('message', handleMessage);
-        }
-      };
-      window.addEventListener('message', handleMessage);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to initiate auth');
+  const handleOpenClock = () => {
+    const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || (window as any).opera);
+    if (isAndroid) {
+      // General intent to open the clock app
+      window.location.href = 'intent:#Intent;action=android.intent.action.SHOW_ALARMS;end';
+    } else {
+      setClockError(true);
+      setTimeout(() => setClockError(false), 3000);
     }
-  };
-
-  const formatEventTime = (event: CalendarEvent) => {
-    if (event.start.dateTime) {
-      return new Date(event.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-    return 'All Day';
-  };
-
-  const formatEventDate = (event: CalendarEvent) => {
-    const date = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date!);
-    const today = new Date();
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -93,90 +27,56 @@ const CalendarReminders: React.FC = () => {
             <Calendar className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Reminders</h3>
-            <p className="text-xs opacity-60">Google Calendar Sync</p>
+            <h3 className="font-semibold text-lg">App Shortcuts</h3>
+            <p className="text-xs opacity-60">Manage your schedule</p>
           </div>
         </div>
-        {isConnected && (
-          <button 
-            onClick={fetchEvents}
-            disabled={loading}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-        {!isConnected ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-              <Calendar className="w-8 h-8 opacity-20" />
+      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4">
+        <p className="text-sm opacity-60 mb-2">
+          Use the "Remind Me" buttons on workouts and meals to create events. Check your apps below:
+        </p>
+
+        <button
+          onClick={handleOpenCalendar}
+          className="group relative bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 transition-all flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Calendar className="w-4 h-4 text-blue-400" />
             </div>
-            <p className="text-sm opacity-60 mb-6 max-w-[200px]">
-              Connect your Google Calendar to see upcoming health and fitness reminders.
-            </p>
-            <button
-              onClick={handleConnect}
-              className="px-6 py-2.5 bg-white text-black font-semibold rounded-xl hover:bg-opacity-90 transition-all text-sm flex items-center gap-2"
-            >
-              Connect Calendar
-            </button>
+            <div className="text-left">
+              <h4 className="text-sm font-medium group-hover:text-blue-300 transition-colors">Google Calendar</h4>
+              <p className="text-[10px] opacity-50">View your schedule</p>
+            </div>
           </div>
-        ) : events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400/30 mb-4" />
-            <p className="text-sm opacity-60">No upcoming events found.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <AnimatePresence mode="popLayout">
-              {events.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 transition-all"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">
-                          {formatEventDate(event)}
-                        </span>
-                        <span className="text-[10px] font-medium opacity-40">
-                          {formatEventTime(event)}
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-medium line-clamp-1 group-hover:text-blue-300 transition-colors">
-                        {event.summary}
-                      </h4>
-                    </div>
-                    <a 
-                      href={event.htmlLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded-lg"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </div>
+          <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
 
-      {error && (
-        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
-          <Bell className="w-3 h-3" />
-          {error}
-        </div>
-      )}
+        <button
+          onClick={handleOpenClock}
+          className={`group relative hover:bg-white/10 border rounded-xl p-4 transition-all flex items-center justify-between ${clockError ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/5'
+            }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${clockError ? 'bg-red-500/10' : 'bg-orange-500/10'}`}>
+              <Clock className={`w-4 h-4 ${clockError ? 'text-red-400' : 'text-orange-400'}`} />
+            </div>
+            <div className="text-left">
+              <h4 className={`text-sm font-medium transition-colors ${clockError ? 'text-red-300' : 'group-hover:text-orange-300'}`}>
+                {clockError ? 'Android Only' : 'Alarms & Clock'}
+              </h4>
+              <p className={`text-[10px] opacity-50 ${clockError ? 'text-red-200' : ''}`}>
+                {clockError ? 'Please open your app manually' : 'Manage daily alerts'}
+              </p>
+            </div>
+          </div>
+          <ArrowRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${clockError ? 'text-red-400' : 'text-orange-400'}`} />
+          <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity ${clockError ? 'bg-red-500' : 'bg-orange-500'}`} />
+        </button>
+      </div>
     </div>
   );
 };
