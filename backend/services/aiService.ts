@@ -67,6 +67,54 @@ export const generateNutritionPlanAI = async (params: {
   throw new Error('No AI service (Groq or Gemini) available in backend');
 };
 
+export const analyzeFoodMacroAI = async (foodQuery: string) => {
+  const prompt = `Analyze this food query: "${foodQuery}"
+  Return ONLY a valid JSON object estimating the nutritional value. The response must exactly match this structure:
+  {
+    "food": "The normalized name of the food (e.g., '1 Large Banana', '2 Scrambled Eggs')",
+    "calories": number (total kcal),
+    "protein": number (total grams),
+    "carbs": number (total grams),
+    "fat": number (total grams)
+  }
+  Do not include any other text, markdown, or explanations. Just the JSON object.`;
+
+  const groq = getGroqClient();
+  if (groq) {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: 'system', content: 'You are a precise nutritional calculator. Return ONLY valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        model: 'llama-3.3-70b-versatile',
+        response_format: { type: 'json_object' }
+      });
+      return JSON.parse(completion.choices[0].message.content || '{}');
+    } catch (e) {
+      console.error('Groq Macro Error:', e);
+    }
+  }
+
+  const gemini = getGeminiClient();
+  if (gemini) {
+    try {
+      const response = await gemini.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+      });
+      const text = response.text || '{}';
+      const cleanJson = text.replace(/```json\n?|\n?```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (e) {
+      console.error('Gemini Macro Error:', e);
+      throw e;
+    }
+  }
+
+  throw new Error('No AI service available in backend');
+};
+
 export const generateWorkoutPlanAI = async (params: {
   goals: string;
   sleepHours: number;

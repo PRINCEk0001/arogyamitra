@@ -1,6 +1,6 @@
 import express from 'express';
 import { calculateHealthStats } from '../services/healthLogic.js';
-import { generateNutritionPlanAI } from '../services/aiService.js';
+import { generateNutritionPlanAI, analyzeFoodMacroAI } from '../services/aiService.js';
 import db from '../database/database.js';
 
 const router = express.Router();
@@ -14,7 +14,7 @@ router.post('/plan', async (req, res) => {
 
   try {
     const stats = calculateHealthStats(profile);
-    
+
     let targetCalories = stats.tdee;
     if (profile.goals === 'fat_loss') targetCalories -= 300;
     else if (profile.goals === 'muscle_gain') targetCalories += 300;
@@ -39,6 +39,22 @@ router.post('/plan', async (req, res) => {
   } catch (error) {
     console.error("Nutrition plan error:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post('/macro', async (req, res) => {
+  const { query } = req.body;
+
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: "Valid food query is required" });
+  }
+
+  try {
+    const macroData = await analyzeFoodMacroAI(query);
+    res.json(macroData);
+  } catch (error) {
+    console.error("Macro search error:", error);
+    res.status(500).json({ error: "Failed to analyze food" });
   }
 });
 

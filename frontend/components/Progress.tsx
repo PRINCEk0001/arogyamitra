@@ -12,8 +12,10 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { UserProfile, ProgressEntry } from '../types';
-import { TrendingDown, Scale, Calendar, Plus, Activity, X } from 'lucide-react';
+import { TrendingDown, Scale, Calendar, Plus, Activity, X, Smile, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import bmrDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_bmr_icon_1772964574066.png'; // Generated styling asset
+import moodDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_mood_icon_1772964644252.png'; // Generated styling asset
 
 ChartJS.register(
   CategoryScale,
@@ -38,6 +40,11 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
   const [newWeight, setNewWeight] = useState(profile?.weight?.toString() || '0');
   const [newNotes, setNewNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Feature 2: Manual Activity & Mood Log State
+  const [activityDesc, setActivityDesc] = useState('');
+  const [selectedMood, setSelectedMood] = useState('😃');
+  const [activityLogs, setActivityLogs] = useState<{ desc: string, mood: string, time: string }[]>([]);
 
   const fetchProgress = async () => {
     try {
@@ -163,20 +170,149 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
   const startWeight = progress[0]?.weight || profile.weight;
   const diff = Math.round((latestWeight - startWeight) * 10) / 10;
 
+  // Advanced BMR Calculation (Mifflin-St Jeor Equation)
+  const heightCm = profile.height;
+  const age = profile.age || 25; // Defaulting if not strictly provided
+  const isMale = profile.gender === 'male';
+  const bmr = Math.round((10 * latestWeight) + (6.25 * heightCm) - (5 * age) + (isMale ? 5 : -161));
+  const tdee = Math.round(bmr * (profile.activityLevel === 'sedentary' ? 1.2 : profile.activityLevel === 'moderate' ? 1.55 : 1.725));
+
+  const currentBmi = Math.round((latestWeight / Math.pow(heightCm / 100, 2)) * 10) / 10;
+  let bmiCategory = 'Normal';
+  if (currentBmi < 18.5) bmiCategory = 'Underweight';
+  else if (currentBmi > 25) bmiCategory = 'Overweight';
+
   return (
     <div className="px-4 py-6 flex flex-col gap-6 pb-24">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Progress Tracking</h2>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Progress Tracking</h2>
         <button
           onClick={() => setShowAddModal(true)}
-          className="w-10 h-10 bg-primary text-background-dark rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+          className="w-10 h-10 bg-primary/20 text-primary border border-primary/30 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Nano Banana BMR & BMI Dashboard */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-surface-dark p-5 rounded-3xl border border-white/5">
+        {/* BMI Gauge */}
+        <div className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-xl hover:border-white/10 transition-colors">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+              <Scale className="w-3 h-3 text-primary" />
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Body Mass</span>
+          </div>
+          <p className="text-3xl font-bold text-white mb-1 tracking-tight">{currentBmi}</p>
+          <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-primary">{bmiCategory}</span>
+          </div>
+        </div>
+
+        {/* BMR Energy */}
+        <div className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group shadow-xl hover:border-purple-500/20 transition-colors">
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors"></div>
+          <div className="flex items-center gap-2 mb-3 relative z-10">
+            <span className="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+              <Activity className="w-3 h-3 text-purple-400" />
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Metabolism</span>
+          </div>
+          <p className="text-3xl font-bold text-white mb-1 tracking-tight relative z-10">{bmr} <span className="text-xs text-slate-500">kcal</span></p>
+          <div className="inline-flex items-center text-[10px] text-purple-400 font-bold uppercase tracking-widest relative z-10">
+            TDEE: {tdee}
+          </div>
+        </div>
+      </div>
+
+      {/* Manual Activity & Mood Log */}
+      <div className="bg-surface-dark p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
+
+        <div className="relative flex items-center justify-between mb-6">
+          <div className="flex gap-4">
+            <div className="w-14 h-14 rounded-[1.2rem] bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 shadow-lg p-2 relative overflow-hidden">
+              <div className="absolute inset-0 bg-yellow-400/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <img src={moodDropIcon} alt="Mood Logger" className="w-full h-full object-contain relative z-10 hover:scale-110 transition-transform duration-500" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h3 className="text-lg font-bold text-white tracking-tight">Daily Reflection</h3>
+              <p className="text-[10px] uppercase font-bold text-yellow-500 tracking-widest mt-0.5">Activity & Mood</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="flex justify-between items-center bg-background-dark/50 p-2 rounded-[2rem] border border-white/5">
+            {['😡', '😟', '😐', '😃', '🤩'].map(emoji => (
+              <button
+                key={emoji}
+                onClick={() => setSelectedMood(emoji)}
+                className={`w-12 h-12 rounded-full text-2xl flex items-center justify-center transition-all ${selectedMood === emoji
+                    ? 'bg-yellow-500/20 scale-110 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.3)]'
+                    : 'hover:bg-white/5 hover:scale-105 opacity-60 hover:opacity-100'
+                  }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (activityDesc.trim()) {
+                setActivityLogs([{
+                  desc: activityDesc,
+                  mood: selectedMood,
+                  time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                }, ...activityLogs]);
+                setActivityDesc('');
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              type="text"
+              value={activityDesc}
+              onChange={(e) => setActivityDesc(e.target.value)}
+              placeholder="What did you do today?"
+              className="flex-1 bg-background-dark border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 transition-all placeholder:text-slate-600"
+            />
+            <button
+              type="submit"
+              disabled={!activityDesc.trim()}
+              className="w-12 h-12 rounded-2xl bg-yellow-500 text-background-dark flex items-center justify-center disabled:opacity-50 hover:opacity-90 active:scale-95 transition-all shadow-lg"
+            >
+              <Send className="w-5 h-5 ml-1" />
+            </button>
+          </form>
+
+          {activityLogs.length > 0 && (
+            <div className="mt-2 flex flex-col gap-2 max-h-48 overflow-y-auto no-scrollbar mask-linear-bottom">
+              {activityLogs.map((log, i) => (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={i}
+                  className="bg-background-dark/40 py-3 px-4 rounded-2xl border border-white/5 flex flex-col gap-1 hover:bg-background-dark/60 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">{log.mood}</span>
+                    <span className="text-[9px] uppercase tracking-widest font-bold text-slate-500">{log.time}</span>
+                  </div>
+                  <p className="text-sm text-slate-200 mt-1 pl-1 leading-snug">{log.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-surface-dark p-5 rounded-3xl border border-white/5 shadow-lg group hover:border-white/10 transition-colors">
           <div className="flex items-center gap-2 text-primary mb-2">
             <Scale className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Current Weight</span>

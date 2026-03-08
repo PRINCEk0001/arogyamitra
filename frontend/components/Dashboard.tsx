@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Flame, Utensils, User, Info, PlayCircle, ChevronRight, Clock } from 'lucide-react';
+import { Activity, Flame, Utensils, PlayCircle, Clock, ChevronRight, Info, Plus, Minus, Droplets, Calendar as CalendarIcon, CheckCircle2, User } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, MealPlan, Workout, Meal, HealthStats, DiscoverData } from '../types';
 import { GoogleCalendarButton } from './GoogleCalendarButton';
 import { WorkoutTimer } from './WorkoutTimer';
 import { DigitalClock } from './DigitalClock';
+import { MacroSearch } from './MacroSearch';
+import waterDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_water_tracker_icon_1772964194906.png'; // Using absolute path reference for generated asset
+import calendarDropIcon from '../../../../../.gemini/antigravity/brain/ea307f19-aef0-4114-95a4-3f7b3a3670b6/nano_banana_calendar_icon_1772964307855.png'; // Using absolute path reference for generated asset
 
 interface DashboardProps {
   profile: UserProfile;
@@ -16,7 +19,7 @@ interface DashboardProps {
   onRefresh: () => void;
   onEditProfile: () => void;
   loading: boolean;
-  activeTab: 'dashboard' | 'workout' | 'nutrition' | 'progress';
+  activeTab: 'dashboard' | 'workout' | 'nutrition';
   token: string;
 }
 
@@ -32,7 +35,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeTab,
   token
 }) => {
+  const [time, setTime] = useState(new Date());
   const navigate = useNavigate();
+  const [waterIntake, setWaterIntake] = useState(0);
+  const dailyWaterGoal = 2500; // ml
+
+  // Smart Workout Scheduler state
+  const [selectedDay, setSelectedDay] = useState(0); // 0 = Today
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today = new Date().getDay();
 
   // Helper to ensure YouTube links are embeddable in iframes
   const getEmbedUrl = (url: string) => {
@@ -85,79 +96,148 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     return (
       <div className="flex flex-col gap-2 pb-24">
-        {renderHeader()}
-        <div className="px-4 flex flex-col gap-6">
-          <div className="bg-surface-dark rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
-            <div className="h-56 bg-cover bg-center relative" style={{ backgroundImage: `url(${workout.imageUrl})` }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-surface-dark via-surface-dark/20 to-transparent"></div>
-              <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mb-1 block">Recommended Plan</span>
-                  <h3 className="text-2xl font-bold text-white">{workout.title}</h3>
-                </div>
-                <GoogleCalendarButton
-                  token={token}
-                  summary={`Workout: ${workout.title}`}
-                  description={`Duration: ${workout.duration}\nIntensity: ${workout.intensity}\nExercises: ${workout.exercises?.map(e => e.name).join(', ')}`}
-                />
+        {/* Smart Workout Scheduler Header */}
+        <header className="px-4 pt-6 pb-2 flex flex-col gap-5 sticky top-0 bg-background-dark/90 backdrop-blur-xl z-30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-white tracking-tight">Smart Schedule</h1>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">{days[today]}, {time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
               </div>
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-bold uppercase tracking-widest border border-white/5">{workout.duration}</span>
-                <span className="text-[10px] bg-primary/10 px-3 py-1.5 rounded-full text-primary font-bold uppercase tracking-widest border border-primary/10">{workout.intensity}</span>
-              </div>
+            <button
+              onClick={onEditProfile}
+              className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:border-primary/50 transition-all active:scale-90 overflow-hidden"
+            >
+              <User className="w-5 h-5 text-primary" />
+            </button>
+          </div>
 
-              <div className="mb-8">
-                <WorkoutTimer initialMinutes={parseInt(workout.duration) || 30} />
-              </div>
+          {/* 7-Day Calendar Scroll */}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-linear">
+            {days.map((dayName, idx) => {
+              const dateOffset = idx - today;
+              const d = new Date(time);
+              d.setDate(time.getDate() + dateOffset);
 
-              <p className="text-sm text-slate-400 mb-8 leading-relaxed">"{workout.reason}"</p>
-              <div className="flex flex-col gap-4">
-                {workout.exercises?.map((ex, i) => (
-                  <div key={i} className="flex flex-col gap-4 p-5 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Exercise {i + 1}</span>
-                        <span className="font-bold text-white text-lg">{ex.name}</span>
-                      </div>
-                      <div className="bg-primary/20 px-4 py-2 rounded-2xl border border-primary/20">
-                        <span className="text-primary font-mono font-bold">{ex.sets} x {ex.reps}</span>
-                      </div>
-                    </div>
-                    {ex.videoUrl && (
-                      <div
-                        className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-inner cursor-pointer group/vid"
-                        onClick={() => window.open(ex.videoUrl, '_blank')}
-                      >
-                        {/* YouTube thumbnail derived from the video ID */}
-                        <img
-                          src={`https://img.youtube.com/vi/${(() => {
-                            try {
-                              const u = new URL(ex.videoUrl);
-                              return u.searchParams.get('v') || u.pathname.split('/').pop() || '';
-                            } catch { return ''; }
-                          })()}/hqdefault.jpg`}
-                          alt={`${ex.name} tutorial`}
-                          className="w-full h-full object-cover opacity-70 group-hover/vid:opacity-100 transition-all duration-500"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                          <div className="w-14 h-14 rounded-full bg-red-600/90 flex items-center justify-center group-hover/vid:scale-110 transition-transform shadow-lg">
-                            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
-                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full">Watch on YouTube</span>
+              const isSelected = selectedDay === dateOffset;
+              const isToday = dateOffset === 0;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedDay(dateOffset)}
+                  className={`flex flex-col items-center justify-center w-14 h-20 shrink-0 rounded-[1.2rem] transition-all border ${isSelected
+                    ? 'bg-primary text-background-dark border-primary shadow-[0_5px_15px_-5px_rgba(19,236,178,0.5)] scale-105'
+                    : isToday
+                      ? 'bg-primary/10 border-primary/30 text-white'
+                      : 'bg-surface-dark border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/20'
+                    }`}
+                >
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-background-dark/70' : isToday ? 'text-primary' : 'text-slate-500'}`}>{dayName}</span>
+                  <span className={`text-xl font-bold mt-1 ${isSelected ? 'text-background-dark' : 'text-white'}`}>{d.getDate()}</span>
+                  {(isSelected || isToday) && (
+                    <span className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-background-dark' : 'bg-primary'}`}></span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </header>
+
+        <div className="px-4 flex flex-col gap-6 mt-2">
+          {selectedDay !== 0 ? (
+            <div className="bg-surface-dark p-8 rounded-[2.5rem] border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-4 group hover:border-primary/30 transition-colors">
+              <div className="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                <img src={calendarDropIcon} alt="Calendar" className="w-12 h-12 object-contain filter drop-shadow-[0_0_15px_rgba(19,236,178,0.3)]" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-bold text-white">Future Schedule</h3>
+                <p className="text-xs text-slate-400">Your AI coach will generate specific regimens for this day.</p>
+              </div>
+              <button
+                onClick={() => setSelectedDay(0)}
+                className="mt-2 px-6 py-2.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20 hover:bg-primary/20 transition-colors"
+              >
+                Return to Today
+              </button>
+            </div>
+          ) : (
+            <div className="bg-surface-dark rounded-[2.5rem] overflow-hidden border border-white/5 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.5)]">
+              <div className="h-56 bg-cover bg-center relative group" style={{ backgroundImage: `url(${workout.imageUrl})` }}>
+                <div className="absolute inset-0 bg-gradient-to-t from-surface-dark via-surface-dark/40 to-transparent"></div>
+                <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mb-1 block">Recommended Plan</span>
+                    <h3 className="text-2xl font-bold text-white">{workout.title}</h3>
+                  </div>
+                  <GoogleCalendarButton
+                    token={token}
+                    summary={`Workout: ${workout.title}`}
+                    description={`Duration: ${workout.duration}\nIntensity: ${workout.intensity}\nExercises: ${workout.exercises?.map(e => e.name).join(', ')}`}
+                  />
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-bold uppercase tracking-widest border border-white/5">{workout.duration}</span>
+                  <span className="text-[10px] bg-primary/10 px-3 py-1.5 rounded-full text-primary font-bold uppercase tracking-widest border border-primary/10">{workout.intensity}</span>
+                </div>
+
+                <div className="mb-8">
+                  <WorkoutTimer initialMinutes={parseInt(workout.duration) || 30} />
+                </div>
+
+                <p className="text-sm text-slate-400 mb-8 leading-relaxed">"{workout.reason}"</p>
+                <div className="flex flex-col gap-4">
+                  {workout.exercises?.map((ex, i) => (
+                    <div key={i} className="flex flex-col gap-4 p-5 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Exercise {i + 1}</span>
+                          <span className="font-bold text-white text-lg">{ex.name}</span>
+                        </div>
+                        <div className="bg-primary/20 px-4 py-2 rounded-2xl border border-primary/20">
+                          <span className="text-primary font-mono font-bold">{ex.sets} x {ex.reps}</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {ex.videoUrl && (
+                        <div
+                          className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-inner cursor-pointer group/vid"
+                          onClick={() => window.open(ex.videoUrl, '_blank')}
+                        >
+                          {/* YouTube thumbnail derived from the video ID */}
+                          <img
+                            src={`https://img.youtube.com/vi/${(() => {
+                              try {
+                                const u = new URL(ex.videoUrl);
+                                return u.searchParams.get('v') || u.pathname.split('/').pop() || '';
+                              } catch { return ''; }
+                            })()}/hqdefault.jpg`}
+                            alt={`${ex.name} tutorial`}
+                            className="w-full h-full object-cover opacity-70 group-hover/vid:opacity-100 transition-all duration-500"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                            <div className="w-14 h-14 rounded-full bg-red-600/90 flex items-center justify-center group-hover/vid:scale-110 transition-transform shadow-lg">
+                              <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                            <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full">Watch on YouTube</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -181,8 +261,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return (
       <div className="flex flex-col gap-2 pb-24">
         {renderHeader()}
-        <div className="px-4 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+        <div className="px-4 flex flex-col gap-6 mt-4">
+          <MacroSearch token={token} />
+
+          <div className="flex items-center justify-between mt-2">
             <h2 className="text-xl font-bold text-white">Daily Fuel</h2>
             <button onClick={onRefresh} disabled={loading} className="text-primary text-[10px] font-bold uppercase tracking-[0.2em] disabled:opacity-50 bg-primary/10 px-4 py-2 rounded-full border border-primary/10">
               {loading ? 'Syncing...' : 'Refresh Plan'}
@@ -359,6 +441,57 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Water Tracking System */}
+      <section className="px-4 flex flex-col gap-4">
+        <div className="bg-surface-dark p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent"></div>
+
+          <div className="relative flex justify-between items-start mb-6">
+            <div className="flex gap-4">
+              <div className="w-16 h-16 rounded-[1.5rem] bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-lg p-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-cyan-400/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <img src={waterDropIcon} alt="Water Tracker" className="w-full h-full object-contain relative z-10 hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-500 mb-1">Hydration</span>
+                <span className="text-2xl font-bold text-white tracking-tight">{waterIntake} <span className="text-sm text-slate-400 font-medium">/ {dailyWaterGoal} ml</span></span>
+              </div>
+            </div>
+            <div className="bg-cyan-500 flex items-center gap-1 px-3 py-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+              <Droplets className="w-3 h-3 text-background-dark" fill="currentColor" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-background-dark">{Math.round((waterIntake / dailyWaterGoal) * 100)}%</span>
+            </div>
+          </div>
+
+          <div className="relative h-2 bg-background-dark rounded-full mb-6 overflow-hidden border border-white/5">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min((waterIntake / dailyWaterGoal) * 100, 100)}%` }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full"
+            >
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJz48ZmlsdGVyIGlkPSdmJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC4wNScgbnVtT2N0YXZlcz0nMScgcmVzdWx0PSdub2lzZScvPjxfeEFSZEMgaW49J25vaXNlJyBpbjI9J1NvdXJjZUdyYXBoaWMnIHNjYWxlPSc1JyB4Q2hhbm5lbFNlbGVjdG9yPSdSJyB5Q2hhbm5lbFNlbGVjdG9yPSdHJy8+PC9maWx0ZXI+PHBvcHkgZmlsdGVyPSd1cmwoI2YpJyB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPSdyaWdodCcvPjwvc3ZnPg==')] opacity-30 animate-pulse"></div>
+            </motion.div>
+          </div>
+
+          <div className="relative flex justify-between gap-3">
+            <button
+              onClick={() => setWaterIntake(Math.max(0, waterIntake - 250))}
+              className="flex-1 h-12 rounded-2xl bg-surface-dark border border-white/10 flex items-center justify-center hover:bg-white/[0.03] active:scale-[0.98] transition-all text-slate-400 hover:text-white"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setWaterIntake(waterIntake + 250)}
+              className="flex-[2] h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center gap-2 hover:bg-cyan-500/20 active:scale-[0.98] transition-all group/btn"
+            >
+              <Plus className="w-4 h-4 text-cyan-400 group-hover/btn:rotate-90 transition-transform" />
+              <span className="text-sm font-bold text-cyan-400 tracking-wider">250 ml</span>
+            </button>
+          </div>
         </div>
       </section>
 
