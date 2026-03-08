@@ -35,7 +35,7 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newWeight, setNewWeight] = useState(profile.weight.toString());
+  const [newWeight, setNewWeight] = useState(profile?.weight?.toString() || '0');
   const [newNotes, setNewNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,7 +105,7 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
   }
 
   const labels = progress.map(h => new Date(h.date).toLocaleDateString());
-  
+
   const weightChartData = {
     labels,
     datasets: [
@@ -167,7 +167,7 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
     <div className="px-4 py-6 flex flex-col gap-6 pb-24">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Progress Tracking</h2>
-        <button 
+        <button
           onClick={() => setShowAddModal(true)}
           className="w-10 h-10 bg-primary text-background-dark rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
         >
@@ -234,7 +234,7 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
       <AnimatePresence>
         {showAddModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -249,8 +249,8 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
               <form onSubmit={handleAddProgress} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Current Weight (kg)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     step="0.1"
                     value={newWeight}
                     onChange={e => setNewWeight(e.target.value)}
@@ -260,14 +260,14 @@ export const Progress: React.FC<ProgressProps> = ({ profile, token }) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Notes (Optional)</label>
-                  <textarea 
+                  <textarea
                     value={newNotes}
                     onChange={e => setNewNotes(e.target.value)}
                     className="w-full bg-background-dark border border-white/5 rounded-2xl p-4 text-white focus:border-primary/50 outline-none h-24 resize-none"
                     placeholder="How are you feeling?"
                   />
                 </div>
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full bg-primary text-background-dark font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all"

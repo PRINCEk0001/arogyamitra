@@ -341,10 +341,16 @@ export default function App() {
 
             <Route path="/progress" element={
               <ProtectedRoute token={token}>
-                <div className="pt-6">
-                  <h2 className="text-2xl font-bold px-4 mb-4">Your Progress</h2>
-                  <Progress profile={profile!} token={token!} />
-                </div>
+                {!profile ? (
+                  <div className="pt-6 flex justify-center items-center h-64">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="pt-6">
+                    <h2 className="text-2xl font-bold px-4 mb-4">Your Progress</h2>
+                    <Progress profile={profile} token={token!} />
+                  </div>
+                )}
               </ProtectedRoute>
             } />
 
