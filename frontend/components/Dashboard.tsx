@@ -364,7 +364,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Quick Summary Cards */}
       <section className="px-4 flex flex-col gap-4">
-        <div className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 flex items-center justify-between hover:bg-white/[0.02] transition-colors group">
+        <div
+          onClick={() => navigate('/workout')}
+          className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 flex items-center justify-between hover:bg-white/[0.02] transition-all group cursor-pointer active:scale-[0.98]"
+        >
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10 group-hover:scale-105 transition-transform">
               <Activity className="w-7 h-7 text-primary" />
@@ -374,12 +377,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p className="font-bold text-white text-lg">{workout?.title || 'Syncing...'}</p>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-            <Info className="w-4 h-4 text-slate-600" />
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5 group-hover:bg-primary/20 group-hover:border-primary/30 transition-colors">
+            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-primary transition-colors" />
           </div>
         </div>
 
-        <div className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 flex items-center justify-between hover:bg-white/[0.02] transition-colors group">
+        <div
+          onClick={() => navigate('/nutrition')}
+          className="bg-surface-dark p-6 rounded-[2rem] border border-white/5 flex items-center justify-between hover:bg-white/[0.02] transition-all group cursor-pointer active:scale-[0.98]"
+        >
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/10 group-hover:scale-105 transition-transform">
               <Utensils className="w-7 h-7 text-orange-500" />
@@ -389,8 +395,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p className="font-bold text-white text-lg">{mealPlan?.targetCalories || '--'} <span className="text-xs text-slate-500">kcal</span></p>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-            <Info className="w-4 h-4 text-slate-600" />
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5 group-hover:bg-orange-500/20 group-hover:border-orange-500/30 transition-colors">
+            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-orange-500 transition-colors" />
           </div>
         </div>
       </section>
