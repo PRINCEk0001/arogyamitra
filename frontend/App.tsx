@@ -262,7 +262,7 @@ export default function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute token={token}>
                 {!profile || isEditingProfile ? (
-                  <div className="px-4 py-12">
+                  <div className="px-4 pt-12 pb-32">
                     <div className="flex items-center justify-between mb-8">
                       <div>
                         <h1 className="text-3xl font-bold text-primary">{isEditingProfile ? 'Update Profile' : 'Welcome'}</h1>
