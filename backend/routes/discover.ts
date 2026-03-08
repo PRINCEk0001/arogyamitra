@@ -36,8 +36,7 @@ router.get('/search', async (req, res) => {
       part: ['snippet'],
       q: query,
       maxResults: 8,
-      type: ['video'],
-      videoEmbeddable: 'true'   // ← ONLY return videos that allow embedding
+      type: ['video']
     });
 
     // Step 3: Extract the correct videoId using item.id.videoId
@@ -94,25 +93,31 @@ router.get('/discover', async (req, res) => {
     const suggestions = [
       {
         id: '1',
+        videoId: 'v7AYKMP6rOE',
         title: 'Morning Yoga for Energy',
         thumbnail: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
         videoUrl: 'https://www.youtube.com/watch?v=v7AYKMP6rOE',
+        embedUrl: buildYoutubeEmbedUrl('v7AYKMP6rOE'),
         category: 'Yoga',
         duration: '15 min'
       },
       {
         id: '2',
+        videoId: 'ml6cT4AZdqI',
         title: '10 Min HIIT Workout',
         thumbnail: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80',
         videoUrl: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+        embedUrl: buildYoutubeEmbedUrl('ml6cT4AZdqI'),
         category: 'HIIT',
         duration: '10 min'
       },
       {
         id: '3',
+        videoId: '98v_07V8qCc',
         title: 'Healthy Meal Prep Ideas',
         thumbnail: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80',
         videoUrl: 'https://www.youtube.com/watch?v=98v_07V8qCc',
+        embedUrl: buildYoutubeEmbedUrl('98v_07V8qCc'),
         category: 'Nutrition',
         duration: '12 min'
       }
