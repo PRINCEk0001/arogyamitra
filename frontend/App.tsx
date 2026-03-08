@@ -206,12 +206,17 @@ export default function App() {
         setIsEditingProfile(false);
         await fetchAllData(newProfile);
       } else {
-        const err = await res.json();
+        let errStr = "Failed to update profile. Please check your connection.";
+        try {
+          const err = await res.json();
+          errStr = err.error || errStr;
+        } catch (e) { }
+
         if (res.status === 403 || res.status === 401) {
-          handleLogout();
-          alert("Your session has expired. Please log in again.");
+          console.warn("Backend rejected token on profile submission");
+          alert("Your session token was rejected by the server. " + errStr);
         } else {
-          alert(err.error || "Failed to update profile. Please check your connection.");
+          alert(errStr);
         }
       }
     } catch (error) {
